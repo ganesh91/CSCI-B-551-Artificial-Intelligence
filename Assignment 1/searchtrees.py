@@ -43,8 +43,18 @@ def resolveDistance(graph,visited):
                 distance+=element[path[index+1]]
     print(path,distance)
 
+def resolveLevel(graph,visited,source,destination):
+    path=[]
+    visitedDict=defaultdict(type(source))
+    for (k,v) in visited:
+        visitedDict[k]=v
+    currNode=destination
+    while currNode is not source:
+        path.append(currNode)
+        currNode=visitedDict[currNode]
+    return len(path)
 
-def bfs(source,destination,graph,bd):
+def bfs(source,destination,graph,bd,iterlength=-1):
     possibleLocs=graph.keys()
     if source not in possibleLocs:
         print("Source Not Found in Graph")
@@ -61,7 +71,9 @@ def bfs(source,destination,graph,bd):
                 for element in graph[currNode[0]]:
                     for node in element:
                         if ((node not in [k for (k,v) in visited]) and (node not in [k for (k,v) in queue])):
-                            queue.append((node,currNode[0]))
+                            level=resolveLevel(graph,visited,source,currNode[0])
+                            if (iterlength < 0) or (level < iterlength) :
+                                queue.append((node,currNode[0]))
             else:
                 resolveDistance(graph,visited)
                 return visited
@@ -72,3 +84,5 @@ args=sys.argv[1:]
 graph=loadGraph(graphFile)
 bfs(args[0],args[1],graph,True)
 bfs(args[0],args[1],graph,False)
+bfs(args[0],args[1],graph,False,4)
+bfs(args[0],args[1],graph,False,6)
