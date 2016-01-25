@@ -9,7 +9,7 @@ def loadGraph(graphFile):
     for line in file.readlines():
         node=line.rstrip().split(',')
         graph[node[0]].append({node[1]:int(node[2])})
-        graph[node[1]].append({node[0]:int(node[2])})
+        #graph[node[1]].append({node[0]:int(node[2])})
     return graph
 
 def queuePop(queue,popIndex,bd):
@@ -55,6 +55,7 @@ def resolveLevel(graph,visited,source,destination):
     return len(path)
 
 def bfs(source,destination,graph,bd,iterlength=-1):
+    levelIncrement=iterlength
     possibleLocs=graph.keys()
     if source not in possibleLocs:
         print("Source Not Found in Graph")
@@ -62,6 +63,7 @@ def bfs(source,destination,graph,bd,iterlength=-1):
         print("Destination Not Found in Graph")
     else:
         queue=[(source,0)]
+        tempQueue=[]
         visited=[]
         while queue:
             currNode=queuePop(queue,0,bd)
@@ -74,6 +76,13 @@ def bfs(source,destination,graph,bd,iterlength=-1):
                             level=resolveLevel(graph,visited,source,currNode[0])
                             if (iterlength < 0) or (level < iterlength) :
                                 queue.append((node,currNode[0]))
+                            else:
+                                tempQueue.append((node,currNode[0]))
+                                if len(queue)-1==0:
+                                    queue=tempQueue[:]
+                                    tempQueue=[]
+                                    iterlength+=levelIncrement
+                                    print("Level Deepened",iterlength)
             else:
                 resolveDistance(graph,visited)
                 return visited
@@ -84,5 +93,4 @@ args=sys.argv[1:]
 graph=loadGraph(graphFile)
 bfs(args[0],args[1],graph,True)
 bfs(args[0],args[1],graph,False)
-bfs(args[0],args[1],graph,False,4)
-bfs(args[0],args[1],graph,False,6)
+bfs(args[0],args[1],graph,False,2)
