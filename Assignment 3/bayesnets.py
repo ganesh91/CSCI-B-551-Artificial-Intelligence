@@ -17,6 +17,18 @@ class BayesNets:
         self.adjacency=defaultdict(str)
         self.topology={'B':1,'E':2,'A':3,'J':4,'M':5}
 
+    def returnIndexes(self,X,array):
+        if X=='B':
+            return array[0]
+        if X=='E':
+            return array[1]
+        if X=='A':
+            return ",".join(array[0:2])
+        if X=='J':
+            return array[2]
+        if X=='M':
+            return array[2]
+
     def print(self):
         pp.pprint(self.adjacencyMetadata)
         for item in self.adjacency.keys():
@@ -105,6 +117,7 @@ class BayesNets:
                         local+=1
             if local==len(query):
                 same+=1
+        print(query,same)
         return same
 
     def gibbsvectorcount(self,sample,query):
@@ -119,6 +132,7 @@ class BayesNets:
             if local==len(query):
                 same.append(item[1])
         same=sum(same)
+        print(query,same)
         return same
 
     def sampledistribution(self,nsample,orderednodes):
@@ -132,22 +146,21 @@ class BayesNets:
                 if indegree==0:
                     cp=self.adjacency[i].getValue(i,'T')
                     ra=random.random()
+                    #print(cp,ra)
                     if ra < cp :
                         local.append('T')
                     else:
                         local.append('F')
                 else:
-                    if len(local) <= 4:
-                        s=",".join(local[-indegree:])
-                    else:
-                        s=",".join(local[0:4])
-                    cp=self.adjacency[i].getValue(i,s)
+                    cp=self.adjacency[i].getValue(i,self.returnIndexes(i,local))
                     ra=random.random()
+                    #print(cp,ra)
                     if ra < cp :
                         local.append('T')
                     else:
                         local.append('F')
             samples.append(local)
+            #print(local)
             j+=1
         return(samples)
 
@@ -196,7 +209,7 @@ class BayesNets:
                         s=",".join(local[-indegree:])
                     else:
                         s=",".join(local[0:4])
-                    cp=self.adjacency[i].getValue(i,s)
+                    cp=self.adjacency[i].getValue(i,self.returnIndexes(i,local))
                     ra=random.random()
                     if ra < cp :
                         if evidence[num]=='T' or evidence[num]=='-':
@@ -266,10 +279,10 @@ class BayesNets:
                         else:
                             local.append('F')
                     else:
-                        weight.append(self.adjacency[i].getValue(i,s))
+                        weight.append(self.adjacency[i].getValue(i,self.returnIndexes(i,local)))
                         local.append(evidence[num])
                 if len(local)==len(orderednodes):
-                    #print(local,evidence,weight)
+                    print(local,evidence,weight)
                     samples.append((local,reduce(operator.mul,weight,1)))
             j+=1
         return(samples)
@@ -298,6 +311,6 @@ test=BayesNets()
 test.readAdjacencyGraph("adjacencylist.txt")
 test.buildAdjacencyMetdatata("cpt.txt")
 test.print()
-print(test.priorsampling(10000,['B'],[('J','T'),('M','T')]))
-print(test.rejectionsampling(10000,['B'],[('J','T'),('M','T')]))
-#print(test.maxlikelihood(100,['B'],[('J','T'),('M','T')]))
+#print(test.priorsampling(1000000,['B'],[('M','T'),('J','T')]))
+#print(test.rejectionsampling(1000,['B'],[('M','T'),('J','T')]))
+print(test.maxlikelihood(100000,['B'],[('J','T'),('M','T')]))
