@@ -5,7 +5,7 @@ student(X)
 advices(adam,X)
 #----------------
 professor(Y)
-advices(Y,X):-publishpaper(X,Y),student(X),professor(Y)
+advices(Y,X):-publishpaper(X,Y)
 #----------------
 advices(Y,X):-committee(X,Y)
 #----------------
