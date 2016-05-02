@@ -304,13 +304,3 @@ class BayesNets:
             return(0)
         else:
             return(a/b)
-
-
-
-test=BayesNets()
-test.readAdjacencyGraph("adjacencylist.txt")
-test.buildAdjacencyMetdatata("cpt.txt")
-test.print()
-#print(test.priorsampling(1000000,['B'],[('M','T'),('J','T')]))
-#print(test.rejectionsampling(1000,['B'],[('M','T'),('J','T')]))
-print(test.maxlikelihood(100000,['B'],[('J','T'),('M','T')]))
