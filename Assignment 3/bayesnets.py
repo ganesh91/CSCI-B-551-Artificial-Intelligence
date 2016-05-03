@@ -124,6 +124,7 @@ class BayesNets:
         return same
 
     def gibbsvectorcount(self,sample,query):
+        #print(sample[0][0],query)
         same=[]
         for item in sample:
             local=0
@@ -257,17 +258,21 @@ class BayesNets:
             weight=[]
             count=0
             for num,i in enumerate(orderednodes):
+                if evidence[num]=='F':
+                    qv="~"+i
+                else:
+                    qv=i
                 indegree=self.adjacency[i].indegree
                 if indegree==0:
                     if evidence[num]=='-':
-                        cp=self.adjacency[i].getValue(i,'T')
+                        cp=self.adjacency[i].getValue(qv,'T')
                         ra=random.random()
                         if ra < cp :
                             local.append('T')
                         else:
                             local.append('F')
                     else:
-                        weight.append(self.adjacency[i].getValue(i,evidence[num]))
+                        weight.append(self.adjacency[i].getValue(qv,evidence[num]))
                         local.append(evidence[num])
                 else:
                     if len(local) <= 4:
@@ -282,7 +287,7 @@ class BayesNets:
                         else:
                             local.append('F')
                     else:
-                        weight.append(self.adjacency[i].getValue(i,self.returnIndexes(i,local)))
+                        weight.append(self.adjacency[i].getValue(qv,self.returnIndexes(i,local)))
                         local.append(evidence[num])
                 if len(local)==len(orderednodes):
                     #print(local,evidence,weight)
@@ -302,8 +307,12 @@ class BayesNets:
                         for M in possible:
                             enumerated_list=[B,E,A,J,M]
                             product=1
-                            for variable in order:
-                                product=product*self.adjacency[variable].getValue(variable,self.returnIndexes(variable,enumerated_list))
+                            for q,variable in enumerate(order):
+                                if enumerated_list[q]=='F':
+                                    qv="~"+variable
+                                else:
+                                    qv=variable
+                                product=product*self.adjacency[variable].getValue(qv,self.returnIndexes(variable,enumerated_list))
                             jointprobs.append((enumerated_list,product))
         closedquery=[(qt,qt) for qt in query]
         closedevidence=evidence
@@ -313,8 +322,9 @@ class BayesNets:
         query1=self.querytovector(orderednodes,query,evidence,True)
         #query1=self.querytovector(orderednodes,query,evidence,True)
         #evidence=self.querytovector(orderednodes,query,evidence)
-        for _ in range(len(query)-len(evidence)):
-            evidence.append("-")
+        for _ in range(len(jointprobs[0][0])-len(query1)):
+            query1.append("-")
+            query2.append("-")
         a=self.gibbsvectorcount(jointprobs,query2)
         b=self.gibbsvectorcount(jointprobs,query1)
         if a==0 or b==0:

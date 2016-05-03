@@ -38,4 +38,4 @@ elif args[0]=='l':
         print(item,bayesnet.maxlikelihood(float(args[1]),item,e))
     #print(bayesnet.priorsampling(float(args[1]),['J'],[('A','T'),('B','F')]))
 else:
-    print("Invalid Parameters")
+    print("Invalid Parameters") 
