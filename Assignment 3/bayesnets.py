@@ -95,11 +95,14 @@ class BayesNets:
         evidencenodes=self.inferTopology(self.inferHiddenVariables(self.inferTopology(evidencenodesgiven)))
         return(querynodes,evidencenodesgiven,orderednodes,evidencenodes)
 
-    def querytovector(self,topology,query,evidence):
+    def querytovector(self,topology,query,evidence,negate=False):
         vector=[]
         for item in topology:
             if item in query:
-                vector.append('T')
+                if not negate:
+                    vector.append('T')
+                else:
+                    vector.append('F')
             elif item in [a for (a,b) in evidence]:
                 vector.append([b for (a,b) in evidence if a==item][0])
             else:
@@ -117,7 +120,7 @@ class BayesNets:
                         local+=1
             if local==len(query):
                 same+=1
-        print(query,same)
+        #print(query,same)
         return same
 
     def gibbsvectorcount(self,sample,query):
@@ -132,12 +135,12 @@ class BayesNets:
             if local==len(query):
                 same.append(item[1])
         same=sum(same)
-        print(query,same)
+        #print(query,same)
         return same
 
     def sampledistribution(self,nsample,orderednodes):
         samples=[]
-        print(orderednodes)
+        #print(orderednodes)
         j=0
         while j<nsample:
             local=[]
@@ -183,8 +186,8 @@ class BayesNets:
 
     def rejectsampledistribution(self,nsample,orderednodes,evidence):
         samples=[]
-        print(orderednodes)
-        print(evidence)
+        #print(orderednodes)
+        #print(evidence)
         j=0
         while j<nsample:
             local=[]
@@ -246,8 +249,8 @@ class BayesNets:
 
     def mldistribution(self,nsample,orderednodes,evidence):
         samples=[]
-        print(orderednodes)
-        print(evidence)
+        #print(orderednodes)
+        #print(evidence)
         j=0
         while j<nsample:
             local=[]
@@ -282,11 +285,42 @@ class BayesNets:
                         weight.append(self.adjacency[i].getValue(i,self.returnIndexes(i,local)))
                         local.append(evidence[num])
                 if len(local)==len(orderednodes):
-                    print(local,evidence,weight)
+                    #print(local,evidence,weight)
                     samples.append((local,reduce(operator.mul,weight,1)))
             j+=1
         return(samples)
 
+    def enumeration(self,query,evidence):
+        order=self.topology.items()
+        order=[a for (a,b) in sorted(order,key=lambda x: x[1])]
+        possible=['T','F']
+        jointprobs=[]
+        for B in possible:
+            for E in possible:
+                for A in possible:
+                    for J in possible:
+                        for M in possible:
+                            enumerated_list=[B,E,A,J,M]
+                            product=1
+                            for variable in order:
+                                product=product*self.adjacency[variable].getValue(variable,self.returnIndexes(variable,enumerated_list))
+                            jointprobs.append((enumerated_list,product))
+        closedquery=[(qt,qt) for qt in query]
+        closedevidence=evidence
+        openevidence=[a for (a,b) in evidence]
+        querynodes,evidencenodesgiven,orderednodes,evidencenodes=self.expandNode(query,evidence)
+        query2=self.querytovector(orderednodes,query,evidence)
+        query1=self.querytovector(orderednodes,query,evidence,True)
+        #query1=self.querytovector(orderednodes,query,evidence,True)
+        #evidence=self.querytovector(orderednodes,query,evidence)
+        for _ in range(len(query)-len(evidence)):
+            evidence.append("-")
+        a=self.gibbsvectorcount(jointprobs,query2)
+        b=self.gibbsvectorcount(jointprobs,query1)
+        if a==0 or b==0:
+            return(0)
+        else:
+            return(a/(a+b))
 
     def maxlikelihood(self,nsample,query,evidence):
         closedquery=[(qt,qt) for qt in query]
