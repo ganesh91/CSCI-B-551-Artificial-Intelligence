@@ -1,3 +1,8 @@
+"""
+BayesNet represent the collection of BayesNode. It has functions for reading
+and creating the graph topology and has functions for inference algorithms
+like enumeration, prior sampling, rejectionsampling and maxlikelihood weighting.
+"""
 from collections import defaultdict
 from BayesNode import BayesNode
 import copy
@@ -11,13 +16,20 @@ pp = pprint.PrettyPrinter(indent=4)
 class BayesNets:
     def __init__(self):
         """
-        Class Member Declarations
+        Class Member Declarations. A class has basic data structures to
+        hold the graph metadata, nodes and the topology (DAG Order).
         """
         self.adjacencyMetadata=defaultdict(str)
         self.adjacency=defaultdict(str)
         self.topology={'B':1,'E':2,'A':3,'J':4,'M':5}
 
     def returnIndexes(self,X,array):
+        """
+        Return the dependencies of the node.
+        Input List of state, [F F - T T] and random variable X
+        returns states relevent only to random variable X.
+        Eg. If X is Earthquake, returns only F from index 0.
+        """
         if X=='B':
             return array[0]
         if X=='E':
@@ -30,6 +42,9 @@ class BayesNets:
             return array[2]
 
     def print(self):
+        """
+        Print Bayes Net
+        """
         pp.pprint(self.adjacencyMetadata)
         for item in self.adjacency.keys():
             self.adjacency[item].print()
@@ -78,16 +93,34 @@ class BayesNets:
                 node.setValue(params[0],params[1])
 
     def inferTopology(self,variables):
+        """
+        Given an arbitary list of Random Variables, sort them by their
+        conditional independence. Eg, [A E B] returns [B E A].
+        Every n th element is independant of n+1th element.
+        """
         variableList=[(i,self.topology[i]) for i in variables]
         variableList=sorted(variableList,key=lambda x: x[1])
         return ([a for (a,b) in variableList])
 
     def inferHiddenVariables(self,variables):
+        """
+        Given a list of sorted random variables based on their independence,
+        return sorted list of query/evidence AND hidden variables.
+        Eg, p(Burglary|Marycalls), the function infers there are
+        hidden variables Alarm and Earthquake in between.
+        """
         topology=[(item,self.topology[item]) for item in self.topology]
         topology=[a for (a,b) in topology if b<=self.topology[variables[-1]]]
         return (topology)
 
     def expandNode(self,query,evidence):
+        """
+        expandNode Node function takes query and evidence, infers the hidden variables,
+        sort the list by conditional independence and returns query,evidence(given),
+        joint variables from query and evidence and variables just from evidence.
+        Eg:p(Burglary|Marycalls), returns
+        (Buglary,(Marycalls,T),[Burglary,Earthquake,Alarm,JohnCalls,MaryCalls],[Marycalls])
+        """
         querynodes=set(query)
         evidencenodesgiven=set([a for (a,b) in evidence])
         nodes=querynodes.union(evidencenodesgiven)
@@ -96,6 +129,11 @@ class BayesNets:
         return(querynodes,evidencenodesgiven,orderednodes,evidencenodes)
 
     def querytovector(self,topology,query,evidence,negate=False):
+        """
+        Query to vector accepts a query,evidence and topology as input and returns a place holder
+        list corresponding to the query. Eg, for Query P(B=T), returns [T,-,-,-,-,-].
+        True represents the column index from Topology is true, '-' indicates both T and F is fine.
+        """
         vector=[]
         for item in topology:
             if item in query:
@@ -110,6 +148,11 @@ class BayesNets:
         return vector
 
     def vectorcount(self,sample,query):
+        """
+        Given a list of samples and query, returns how much query is present in the sample.
+        Element wise comparison between a list of lists (Sample) and a list query and returns
+        and integer.
+        """
         same=0
         for item in sample:
             local=0
@@ -124,6 +167,11 @@ class BayesNets:
         return same
 
     def gibbsvectorcount(self,sample,query):
+        """
+        Given a list of samples in tuple([list],float) and query, returns how much query is present in the sample.
+        Element wise comparison between a list of lists Sample, sample[i][0] (list) and a list query and
+        the float (sample[i][1]) of all similar queries are returned as product(float).
+        """
         #print(sample[0][0],query)
         same=[]
         for item in sample:
@@ -140,6 +188,12 @@ class BayesNets:
         return same
 
     def sampledistribution(self,nsample,orderednodes):
+        """
+        Takes input number of samples and the orderednodes(Sorted Topology) and returns list
+        of lists of [T,F] based on the cpt of random variable in the Topology.
+        Returns a true if the random variable generated is less than the actual cpt in case of
+        independant variables. Incase of cpt, the previous values will also be considered.
+        """
         samples=[]
         #print(orderednodes)
         j=0
@@ -169,6 +223,10 @@ class BayesNets:
         return(samples)
 
     def priorsampling(self,nsample,query,evidence):
+        """
+        Implements the inference by prior sampling. Input number of sample, query and evidence
+        query in form of lists ['A'], evidence in form of list of tuple [('A','T'),('B','F')]
+        """
         closedquery=[(qt,qt) for qt in query]
         closedevidence=evidence
         openevidence=[a for (a,b) in evidence]
@@ -186,6 +244,14 @@ class BayesNets:
             return(a/b)
 
     def rejectsampledistribution(self,nsample,orderednodes,evidence):
+        """
+        Takes input number of samples and the orderednodes(Sorted Topology) and returns list
+        of lists of [T,F] based on the cpt of random variable in the Topology and evidence.
+        Returns a true if the random variable generated is less than the actual cpt in case of
+        independant variables. Incase of cpt, the previous values will also be considered.
+        Samples are rejected if they are not as specified in evidence. Evidence will be a list of
+        entries sorted by Topology. Eg, [-,-,-,-,'F'] for evidence variable Mary calls = F
+        """
         samples=[]
         #print(orderednodes)
         #print(evidence)
@@ -232,6 +298,12 @@ class BayesNets:
         return(samples)
 
     def rejectionsampling(self,nsample,query,evidence):
+        """
+        Implements the inference by Rejection sampling. Input number of sample, query and evidence
+        query in form of lists ['A'], evidence in form of list of tuple [('A','T'),('B','F')].
+        uses rejectsampledistribution function to select only the required sample that satisfy
+        the evidence
+        """
         closedquery=[(qt,qt) for qt in query]
         closedevidence=evidence
         openevidence=[a for (a,b) in evidence]
@@ -249,6 +321,16 @@ class BayesNets:
             return(a/b)
 
     def mldistribution(self,nsample,orderednodes,evidence):
+        """
+        Takes input number of samples and the orderednodes(Sorted Topology) and returns list
+        of lists of [T,F] based on the cpt of random variable in the Topology and evidence.
+        Returns a true if the random variable generated is less than the actual cpt in case of
+        independant variables. Incase of cpt, the previous values will also be considered.
+        Samples are rejected if they are not as specified in evidence. Evidence will be a list of
+        entries sorted by Topology. Eg, [-,-,-,-,'F'] for evidence variable Mary calls = F.
+        The function returns list of tuples, Eg ([T,F,T,F,F],0.88): tuple[0] represents the
+        sample and the tuple[1] represents the likelihood.
+        """
         samples=[]
         #print(orderednodes)
         #print(evidence)
@@ -296,6 +378,14 @@ class BayesNets:
         return(samples)
 
     def enumeration(self,query,evidence):
+        """
+        Implements the inference by Enumeration. Input query and evidence
+        query in form of lists ['A'], evidence in form of list of tuple [('A','T'),('B','F')].
+        uses brute force to enumerete the required samples and then based on the evidence
+        sums marginalizes/calculates conditional probability. Returns the probability.
+        Uses querytovector to create the place holder and gibbsvectorcount to count and
+        estimate the probability.
+        """
         order=self.topology.items()
         order=[a for (a,b) in sorted(order,key=lambda x: x[1])]
         possible=['T','F']
@@ -333,6 +423,14 @@ class BayesNets:
             return(a/(a+b))
 
     def maxlikelihood(self,nsample,query,evidence):
+        """
+        Implements the inference by ML sampling. Input number of sample, query and evidence
+        query in form of lists ['A'], evidence in form of list of tuple [('A','T'),('B','F')].
+        uses rejectsampledistribution function to select only the required sample that satisfy
+        the evidence. returns the probability. Uses querytovector and gibbsvectorcount to
+        estimate the probility.
+        """
+
         closedquery=[(qt,qt) for qt in query]
         closedevidence=evidence
         openevidence=[a for (a,b) in evidence]

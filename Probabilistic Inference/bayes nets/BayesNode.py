@@ -1,3 +1,8 @@
+"""
+BayesNode represent the basic modular node of the BayesNet.
+BayesNode defines the properties of the Random Variable like
+indegree, Parent Random Variable, conditional probability table.
+"""
 from collections import defaultdict
 import pprint
 import copy
@@ -19,6 +24,11 @@ class BayesNode:
         """
         Build the conditional probability table for the node.
         Also calculates the negation of the node.
+        Saves CPT as dict of dicts.
+        Result: for a p(A|B):
+
+        (B) {T: {A:0.00,~A:0.00}
+        (B) F: {A:0.00,~A:0.00}}
         """
         if self.indegree==0:
             self.cpt={self.id:None,"~"+self.id:None}
@@ -50,6 +60,11 @@ class BayesNode:
             buildCPTRecurse(queue,[])
 
     def setValue(self,compressed,value):
+        """
+        Parameters: Compressed(concatenated) CPT entry : Eg "T,F"
+        value: float/integer
+        returns None.
+        """
         values=compressed.split(",")
         if self.id==compressed:
             self.cpt={self.id:float(value),"~"+self.id:1-float(value)}
@@ -66,6 +81,10 @@ class BayesNode:
             holder["~"+self.id]=1-float(value)
 
     def getValue(self,X,givenY):
+        """
+        Given the query (Eg, for Node A, valid queries are [A,~A]) append
+        evidence (givenY) in compressed form ("T,F,T"), return cpt entry
+        """
         givenList=givenY.split(",")
         cpt=self.cpt
         if self.indegree==0:
@@ -79,6 +98,9 @@ class BayesNode:
             return(cpt[X])
 
     def print(self):
+        """
+        print the contents of the Bayes Node.
+        """
         #print(self.id,self.indegree,self.outdegree,self.parents,self.children,self.cptenties,self.cpt)
         print("ID :",self.id, "Indegree :",self.indegree, "Parents :",self.parents)
         pp.pprint(self.cpt)
